@@ -20,6 +20,7 @@ import { Entertainment } from './pages/Entertainment'
 import { MyProfile } from './pages/MyProfile'
 import { FakeNews } from './pages/FakeNews'
 import { MultiPerspective } from './pages/MultiPerspective'
+import { Community } from './pages/Community'
 
 function App() {
   return (
@@ -176,6 +177,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <MultiPerspective />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/community"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <Community />
               </MainLayout>
             </ProtectedRoute>
           }

@@ -26,7 +26,7 @@ export const Navbar = () => {
 
     const isAboutActive = location.pathname === "/about";
     const isFakeActive = location.pathname === "/fake";
-
+    const isCommunityActive = location.pathname === "/community";
     const isMultiActive = location.pathname === "/multi";
 
     return token && (
@@ -124,6 +124,26 @@ export const Navbar = () => {
                             className={`border-none h-0.5 bg-purple-700 w-3/5 transition-all duration-300
                                 
                                 ${isMultiActive
+                                    ? "block"
+                                    : "hidden"
+                                }
+                            `}
+                        />
+                    </NavLink>
+
+                    {/* Communiy discussion */}
+                    <NavLink
+                        to="/community"
+                        className="flex flex-col items-center"
+                    >
+                        <li className="py-1 list-none cursor-pointer">
+                            COMMUNITY DISCUSSION
+                        </li>
+
+                        <hr
+                            className={`border-none h-0.5 bg-purple-700 w-3/5 transition-all duration-300
+                                
+                                ${isCommunityActive
                                     ? "block"
                                     : "hidden"
                                 }
