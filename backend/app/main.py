@@ -14,4 +14,5 @@ app.add_middleware(
 
 app.include_router(UserRoutes.registerRouter, prefix="/api/user", tags=["User"])
 app.include_router(UserRoutes.loginRouter, prefix="/api/user", tags=["User"])
+app.include_router(UserRoutes.InfoRouter, prefix="/api/user", tags=["User"])
 # app.include_router(UserRoutes.router, prefix="/api/user", tags=["User"])

@@ -2,6 +2,7 @@ from app.config.MongoConnection import users_collection
 from passlib.context import CryptContext
 from app.config.config import SECRET_KEY
 from fastapi import Response
+from fastapi import Header, HTTPException
 import jwt
 import datetime
 
@@ -88,6 +89,76 @@ def login_user(data):
 
     return {"success": True, "token": token}
 
+
+async def get_current_user(authorization: str = Header(None)):
+
+    # Check Token Exists
+    if not authorization:
+        raise HTTPException(
+            status_code=401,
+            detail="Token missing"
+        )
+
+    try:
+
+        # Extract Token
+        token = authorization.split(" ")[1]
+
+        # Decode JWT
+        payload = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=["HS256"]
+        )
+
+        # Get Email From Token
+        email = payload.get("email")
+
+        if not email:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid token"
+            )
+
+        # Find User In MongoDB
+        user = users_collection.find_one(
+            {"email": email}
+        )
+
+        if not user:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+
+        # Remove MongoDB ObjectId
+        user["_id"] = str(user["_id"])
+
+        # Remove Password Before Sending
+        user.pop("password", None)
+
+        return user
+
+    except jwt.ExpiredSignatureError:
+
+        raise HTTPException(
+            status_code=401,
+            detail="Token expired"
+        )
+
+    except jwt.InvalidTokenError:
+
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token"
+        )
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
 # def get_me(request):
 #     token = request.cookies.get("access_token")
