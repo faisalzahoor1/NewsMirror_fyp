@@ -9,7 +9,7 @@ export const Login = () => {
 
     const { backend_url, token, setToken } = useContext(AppContext)
     const navigate = useNavigate()
-    const [state, setState] = useState('Sign up');
+    const [state, setState] = useState('Sign in');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
@@ -24,6 +24,7 @@ export const Login = () => {
                     localStorage.setItem('token', data.token)
                     setToken(data.token)
                     toast.success("Successfully Registered")
+                    navigate('/')
                 } else {
                     toast.error(data.message)
                 }
@@ -32,7 +33,8 @@ export const Login = () => {
                 if (data.success) {
                     localStorage.setItem('token', data.token)
                     setToken(data.token)
-                    toast.success("Successfully Login")
+                    toast.success("Successfully Logged in")
+                    navigate('/')
                 } else {
                     toast.error(data.message)
                 }
@@ -40,14 +42,15 @@ export const Login = () => {
 
         } catch (error) {
             console.log(error)
-            toast.error(error.message)
+            const msg = error.response?.data?.detail || error.response?.data?.message || error.message || "An error occurred"
+            toast.error(typeof msg === 'string' ? msg : JSON.stringify(msg))
         }
     }
     useEffect(() => {
         if (token) {
             navigate('/')
         }
-    }, [token])
+    }, [token, navigate])
     return (
         <div className='flex items-center justify-center gap-8 px-10 py-10 min-h-screen '>
             <div className="flex-1 flex justify-center shadow-lg transition-transform duration-300 hover:scale-105 hover:shadow-2xl'">
@@ -71,7 +74,7 @@ export const Login = () => {
                         </div>
                         <button type='submit' className='bg-purple-700 text-white w-full py-2 rounded-md text-base cursor-pointer'>{state === 'Sign up' ? "Create account" : "Sign in"}</button>
                         {
-                            state === 'Sign up' ? <p className='text-white'>Already have an account? <span className='text-blue-500 underline cursor-pointer' onClick={() => setState('Sign in')}>Sign in here</span></p> : <p>Create an account? <span className='text-blue-500 underline cursor-pointer' onClick={() => setState('Sign up')}>Click here</span></p>
+                            state === 'Sign up' ? <p className='text-white'>Already have an account? <span className='text-blue-500 underline cursor-pointer' onClick={() => setState('Sign in')}>Sign in here</span></p> : <p className='text-white'>Create an account? <span className='text-blue-500 underline cursor-pointer' onClick={() => setState('Sign up')}>Click here</span></p>
                         }
                     </div>
                 </form>

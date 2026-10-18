@@ -5,9 +5,9 @@ from app.models.UserModel import UserCreate
 from app.controllers.UserController import register_user
 from app.controllers.UserController import login_user
 # from app.controllers.UserController import get_me
-from app.schemas.UserSchema import UserLogin
+from app.schemas.UserSchema import UserLogin, AvatarUpdate
 
-from app.controllers.UserController import get_current_user
+from app.controllers.UserController import get_current_user, update_avatar, remove_avatar
 
 registerRouter = APIRouter()
 loginRouter = APIRouter()
@@ -27,6 +27,16 @@ def login(data: UserLogin):
 @InfoRouter.get("/myinfo")
 async def profile(user = Depends(get_current_user)):
     return user
+
+
+@InfoRouter.put("/avatar")
+def set_avatar(data: AvatarUpdate, user = Depends(get_current_user)):
+    return update_avatar(data, user)
+
+
+@InfoRouter.delete("/avatar")
+def delete_avatar(user = Depends(get_current_user)):
+    return remove_avatar(user)
 
 
 
