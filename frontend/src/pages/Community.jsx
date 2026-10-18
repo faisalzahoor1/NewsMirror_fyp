@@ -2,6 +2,8 @@ import { useContext, useState, useEffect, useRef } from 'react'
 import { AppContext } from '../context/AppContext'
 import { toast } from 'react-toastify'
 import axios from 'axios'
+import { useArticles } from '../hooks/useArticles'
+import { timeAgo } from '../utils/timeAgo'
 
 export const Community = () => {
     const { backend_url, token, user, fetchNotifications, openChatWithUser } = useContext(AppContext)
@@ -35,35 +37,15 @@ export const Community = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
     }, [messages, botLoading])
 
-    const articles = [
-        {
-            id: "1",
-            title: "AI Detects Bias in Political Coverage",
-            source: "Global News",
-            content:
-                "NewsMirror AI analyzed multiple political articles and identified differences in sentiment and framing across mainstream media outlets.",
-            likes: 120,
-            dislikes: 12,
-        },
-        {
-            id: "2",
-            title: "Sports News Sentiment Analysis Released",
-            source: "Sports Daily",
-            content:
-                "The platform analyzed emotional trends in sports journalism using advanced NLP and sentiment classification models.",
-            likes: 87,
-            dislikes: 5,
-        },
-        {
-            id: "3",
-            title: "Technology Innovations & AI Ethics Debate",
-            source: "Tech Journal",
-            content:
-                "Industry leaders and researchers discuss the balance between rapid AI adoption and ethical journalism standards in global media.",
-            likes: 142,
-            dislikes: 8,
-        },
-    ]
+    // Scraped articles, newest additions first (by scrape time), 10 at a time
+    const {
+        articles,
+        total: totalArticles,
+        hasMore: hasMoreArticles,
+        loading: loadingArticles,
+        error: articlesError,
+        loadMore: loadMoreArticles,
+    } = useArticles({ sort: 'scraped', pageSize: 10 })
 
     // Fetch all comments from MongoDB
     const fetchComments = async () => {
@@ -364,12 +346,22 @@ export const Community = () => {
                 {/* LEFT SIDE → ARTICLES & COMMENTS */}
                 <div className="flex-[1.5] space-y-8">
 
+                    {loadingArticles && articles.length === 0 && (
+                        <p className="text-gray-400">Loading articles...</p>
+                    )}
+                    {articlesError && articles.length === 0 && (
+                        <p className="text-red-400">{articlesError}</p>
+                    )}
+                    {!loadingArticles && !articlesError && articles.length === 0 && (
+                        <p className="text-gray-400">No articles to discuss yet. They appear here after the next scrape.</p>
+                    )}
+
                     {articles.map((article) => {
                         const articleComments = comments.filter(c => String(c.article_id) === String(article.id))
                         const topLevelComments = articleComments.filter(c => !c.parent_comment_id)
                         const articleReaction = reactions[article.id] || {
-                            likes: article.likes,
-                            dislikes: article.dislikes,
+                            likes: 0,
+                            dislikes: 0,
                             user_reaction: null
                         }
                         const isLiked = articleReaction.user_reaction === 'like'
@@ -382,24 +374,41 @@ export const Community = () => {
                                 className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl transition-all duration-300"
                             >
                                 {/* ARTICLE HEADER */}
-                                <div className="flex items-center justify-between mb-4">
-                                    <div>
-                                        <h2 className="text-2xl font-bold text-purple-400">
-                                            {article.title}
-                                        </h2>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            Source: {article.source}
-                                        </p>
+                                <div className="flex items-start justify-between gap-4 mb-4">
+                                    <div className="flex gap-4 min-w-0">
+                                        {article.image && (
+                                            <img
+                                                src={article.image}
+                                                alt=""
+                                                loading="lazy"
+                                                onError={(e) => { e.currentTarget.style.display = 'none' }}
+                                                className="hidden sm:block w-28 h-20 object-cover rounded-lg shrink-0"
+                                            />
+                                        )}
+                                        <div className="min-w-0">
+                                            <a
+                                                href={article.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-2xl font-bold text-purple-400 hover:text-purple-300 hover:underline"
+                                            >
+                                                {article.title}
+                                            </a>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                Source: {article.source}
+                                                {article.scraped_at && ` · Added ${timeAgo(article.scraped_at)}`}
+                                            </p>
+                                        </div>
                                     </div>
 
-                                    <span className="bg-purple-900/40 text-purple-300 px-3 py-1 rounded-full text-xs border border-purple-700">
-                                        Community Article #{article.id}
+                                    <span className="bg-purple-900/40 text-purple-300 px-3 py-1 rounded-full text-xs border border-purple-700 shrink-0">
+                                        {article.category}
                                     </span>
                                 </div>
 
-                                {/* ARTICLE CONTENT */}
+                                {/* ARTICLE SUMMARY */}
                                 <p className="text-gray-300 leading-7 mb-6">
-                                    {article.content}
+                                    {article.summary}
                                 </p>
 
                                 {/* LIKE / DISLIKE BUTTONS WITH MONGODB PERSISTENCE */}
@@ -705,6 +714,24 @@ export const Community = () => {
                             </div>
                         )
                     })}
+
+                    {/* LOAD MORE ARTICLES */}
+                    {articles.length > 0 && (
+                        <div className="flex flex-col items-center gap-3">
+                            <p className="text-xs text-gray-500">
+                                Showing {articles.length} of {totalArticles} articles
+                            </p>
+                            {hasMoreArticles && (
+                                <button
+                                    onClick={loadMoreArticles}
+                                    disabled={loadingArticles}
+                                    className="border border-zinc-700 hover:border-purple-600 px-6 py-3 rounded-xl transition-all duration-300 disabled:opacity-60"
+                                >
+                                    {loadingArticles ? 'Loading...' : 'Load more articles'}
+                                </button>
+                            )}
+                        </div>
+                    )}
 
                 </div>
 

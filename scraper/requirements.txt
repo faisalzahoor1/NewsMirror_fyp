@@ -1,6 +1,11 @@
-# GeoNews Scraper – Python dependencies
+# NewsMirror scrapers – Python dependencies
 # Install with: pip install -r requirements.txt
 
+# news_scraper.py (Geo, HUM, SAMAA, Dunya, Express Tribune)
+requests>=2.32.0
+beautifulsoup4>=4.13.0
+pymongo>=4.7.0
+
+# Older Selenium scrapers (scraper.py, scraper_1.py, scraper_2.py)
 selenium>=4.20.0
 webdriver-manager>=4.0.1
-pymongo>=4.7.0

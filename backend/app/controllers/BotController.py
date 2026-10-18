@@ -1,5 +1,6 @@
 from app.config.MongoConnection import articles_collection
 from app.config.config import GEMINI_API_KEY, GEMINI_MODEL
+from app.controllers.ArticleController import CATEGORIES
 from fastapi import HTTPException
 from collections import deque
 from pathlib import Path
@@ -107,7 +108,9 @@ def load_articles():
     raw = []
     try:
         raw = list(articles_collection.find(
-            {}, {"_id": 0, "headline": 1, "section": 1, "url": 1, "scraped_at": 1}
+            {"category": {"$in": CATEGORIES}},
+            {"_id": 0, "headline": 1, "summary": 1, "category": 1, "source": 1,
+             "url": 1, "published_at": 1, "scraped_at": 1}
         ))
     except Exception as exc:
         logger.warning("Could not load articles from MongoDB: %s", exc)
@@ -118,7 +121,7 @@ def load_articles():
     # Deduplicate by URL and keep the newest articles first
     seen = set()
     articles = []
-    for a in sorted(raw, key=lambda a: str(a.get("scraped_at") or ""), reverse=True):
+    for a in sorted(raw, key=lambda a: str(a.get("published_at") or a.get("scraped_at") or ""), reverse=True):
         url = str(a.get("url") or "").strip()
         headline = str(a.get("headline") or "").strip()
         if not url or not headline or url in seen:
@@ -126,7 +129,9 @@ def load_articles():
         seen.add(url)
         articles.append({
             "headline": headline,
-            "section": str(a.get("section") or "general").strip(),
+            "summary": str(a.get("summary") or "").strip(),
+            "category": str(a.get("category") or a.get("section") or "general").strip(),
+            "source": str(a.get("source") or "").strip(),
             "url": url,
         })
 
@@ -159,7 +164,7 @@ def find_relevant_articles(question: str, articles, limit: int = MAX_DETAIL_ARTI
         scored = []
         for a in articles:
             headline_words = _keywords(a["headline"])
-            score = len(query_words & headline_words) * 2 + len(query_words & _keywords(a["section"]))
+            score = len(query_words & headline_words) * 2 + len(query_words & _keywords(a["category"]))
             if score >= 2:
                 scored.append((score, a))
         scored.sort(key=lambda item: item[0], reverse=True)
@@ -208,7 +213,10 @@ def fetch_article_body(url: str):
 def _build_context(articles, detailed):
     lines = ["ARTICLES (published on NewsMirror, newest first):"]
     for a in articles:
-        lines.append(f"{a['number']}. [{a['section']}] {a['headline']} - {a['url']}")
+        source = f" ({a['source']})" if a["source"] else ""
+        lines.append(f"{a['number']}. [{a['category']}] {a['headline']}{source} - {a['url']}")
+        if a["summary"]:
+            lines.append(f"   Summary: {a['summary']}")
     if not articles:
         lines.append("(No NewsMirror articles are available right now.)")
 

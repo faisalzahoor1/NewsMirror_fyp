@@ -10,12 +10,6 @@ from bson import ObjectId
 import datetime
 import jwt
 
-BASE_REACTIONS = {
-    "1": {"likes": 120, "dislikes": 12},
-    "2": {"likes": 87, "dislikes": 5},
-    "3": {"likes": 142, "dislikes": 8},
-}
-
 def add_comment(data, current_user: dict):
     text = data.text.strip() if data.text else ""
     if not text:
@@ -145,25 +139,23 @@ def toggle_reaction(data, current_user: dict):
 
     db_likes = reactions_collection.count_documents({"article_id": article_id, "type": "like"})
     db_dislikes = reactions_collection.count_documents({"article_id": article_id, "type": "dislike"})
-    base = BASE_REACTIONS.get(article_id, {"likes": 0, "dislikes": 0})
 
     return {
         "success": True,
         "article_id": article_id,
         "user_reaction": current_reaction,
-        "likes": base["likes"] + db_likes,
-        "dislikes": base["dislikes"] + db_dislikes
+        "likes": db_likes,
+        "dislikes": db_dislikes
     }
 
 def get_all_reactions(current_user: dict = None):
-    article_ids = set(BASE_REACTIONS.keys()).union(reactions_collection.distinct("article_id"))
+    article_ids = reactions_collection.distinct("article_id")
     user_id = str(current_user["_id"]) if current_user else None
 
     result = {}
     for aid in article_ids:
         db_likes = reactions_collection.count_documents({"article_id": aid, "type": "like"})
         db_dislikes = reactions_collection.count_documents({"article_id": aid, "type": "dislike"})
-        base = BASE_REACTIONS.get(aid, {"likes": 0, "dislikes": 0})
 
         user_reaction = None
         if user_id:
@@ -172,8 +164,8 @@ def get_all_reactions(current_user: dict = None):
                 user_reaction = user_doc.get("type")
 
         result[aid] = {
-            "likes": base["likes"] + db_likes,
-            "dislikes": base["dislikes"] + db_dislikes,
+            "likes": db_likes,
+            "dislikes": db_dislikes,
             "user_reaction": user_reaction
         }
 

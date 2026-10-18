@@ -1,0 +1,4 @@
+# Scraper run logs and generated output (the articles live in MongoDB)
+logs/
+news_articles.json
+__pycache__/
